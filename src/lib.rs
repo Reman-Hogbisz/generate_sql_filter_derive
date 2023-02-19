@@ -119,16 +119,16 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                     );
                                     let inner_type = t.elem.to_token_stream();
                                     filtered_field_declarations.extend::<TokenStream2>(quote! {
-                                        #field_contains : Option<#inner_type>,
-                                        #field_contains_any : Option<Vec<#inner_type>>,
+                                        pub #field_contains : Option<#inner_type>,
+                                        pub #field_contains_any : Option<Vec<#inner_type>>,
                                     });
 
                                     query_builder_declarations.extend::<TokenStream2>(quote! {
-                                        if let Some(contains) = filter.#field_contains {
+                                        if let Some(contains) = self.#field_contains {
                                             query_builder = query_builder.filter(#sql_table::#field.eq_any(contains));
                                         }
 
-                                        if let Some(contains_any) = filter.#field_contains_any {
+                                        if let Some(contains_any) = self.#field_contains_any {
                                             query = query.filter(#field.overlaps_with(contains_any));
                                         }
                                     });
@@ -155,21 +155,21 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 let field_ends_with =
                                     Ident::new(&format!("{}_ends_with", field), Span::call_site());
                                 filtered_field_declarations.extend::<TokenStream2>(quote! {
-                                    #field_contains : Option<String>,
-                                    #field_starts_with : Option<String>,
-                                    #field_ends_with : Option<String>,
+                                    pub #field_contains : Option<String>,
+                                    pub #field_starts_with : Option<String>,
+                                    pub #field_ends_with : Option<String>,
                                 });
 
                                 query_builder_declarations.extend::<TokenStream2>(quote! {
-                                    if let Some(contains) = filter.#field_contains {
+                                    if let Some(contains) = self.#field_contains {
                                         query_builder = query_builder.filter(#sql_table::#field.like(format!("%{}%", contains)));
                                     }
 
-                                    if let Some(starts_with) = filter.#field_starts_with {
+                                    if let Some(starts_with) = self.#field_starts_with {
                                         query_builder = query_builder.filter(#sql_table::#field.like(format!("{}%", starts_with)));
                                     }
 
-                                    if let Some(ends_with) = filter.#field_ends_with {
+                                    if let Some(ends_with) = self.#field_ends_with {
                                         query_builder = query_builder.filter(#sql_table::#field.like(format!("%{}", ends_with)));
                                     }
                                 });
@@ -185,26 +185,26 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             let field_lte =
                                 Ident::new(&format!("{}_lte", field), Span::call_site());
                             filtered_field_declarations.extend::<TokenStream2>(quote! {
-                                #field_gt : Option<#ftype>,
-                                #field_gte : Option<#ftype>,
-                                #field_lt : Option<#ftype>,
-                                #field_lte : Option<#ftype>,
+                                pub #field_gt : Option<#ftype>,
+                                pub #field_gte : Option<#ftype>,
+                                pub #field_lt : Option<#ftype>,
+                                pub #field_lte : Option<#ftype>,
                             });
 
                             query_builder_declarations.extend::<TokenStream2>(quote! {
-                                if let Some(gt) = filter.#field_gt {
+                                if let Some(gt) = self.#field_gt {
                                     query_builder = query_builder.filter(#sql_table::#field.gt(gt));
                                 }
 
-                                if let Some(gte) = filter.#field_gte {
+                                if let Some(gte) = self.#field_gte {
                                     query_builder = query_builder.filter(#sql_table::#field.ge(gte));
                                 }
 
-                                if let Some(lt) = filter.#field_lt {
+                                if let Some(lt) = self.#field_lt {
                                     query_builder = query_builder.filter(#sql_table::#field.lt(lt));
                                 }
 
-                                if let Some(lte) = filter.#field_lte {
+                                if let Some(lte) = self.#field_lte {
                                     query_builder = query_builder.filter(#sql_table::#field.le(lte));
                                 }
                             });
@@ -221,26 +221,26 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             let field_lte =
                                 Ident::new(&format!("{}_lte", field), Span::call_site());
                             filtered_field_declarations.extend::<TokenStream2>(quote! {
-                                #field_gt : Option<#ftype>,
-                                #field_gte : Option<#ftype>,
-                                #field_lt : Option<#ftype>,
-                                #field_lte : Option<#ftype>,
+                                pub #field_gt : Option<#ftype>,
+                                pub #field_gte : Option<#ftype>,
+                                pub #field_lt : Option<#ftype>,
+                                pub #field_lte : Option<#ftype>,
                             });
 
                             query_builder_declarations.extend::<TokenStream2>(quote! {
-                                if let Some(gt) = filter.#field_gt {
+                                if let Some(gt) = self.#field_gt {
                                     query_builder = query_builder.filter(#sql_table::#field.gt(gt));
                                 }
 
-                                if let Some(gte) = filter.#field_gte {
+                                if let Some(gte) = self.#field_gte {
                                     query_builder = query_builder.filter(#sql_table::#field.ge(gte));
                                 }
 
-                                if let Some(lt) = filter.#field_lt {
+                                if let Some(lt) = self.#field_lt {
                                     query_builder = query_builder.filter(#sql_table::#field.lt(lt));
                                 }
 
-                                if let Some(lte) = filter.#field_lte {
+                                if let Some(lte) = self.#field_lte {
                                     query_builder = query_builder.filter(#sql_table::#field.le(lte));
                                 }
                             });
@@ -262,16 +262,16 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 Ident::new(&format!("{}_is_none", field), Span::call_site());
 
                             filtered_field_declarations.extend::<TokenStream2>(quote! {
-                                #field_is_some : #ftype,
-                                #field_is_none : Option<bool>,
+                                pub #field_is_some : #ftype,
+                                pub #field_is_none : Option<bool>,
                             });
 
                             query_builder_declarations.extend::<TokenStream2>(quote! {
-                                if let Some(is_some) = filter.#field_is_some {
+                                if let Some(is_some) = self.#field_is_some {
                                     query_builder = query_builder.filter(#sql_table::#field.eq(is_some));
                                 }
 
-                                if let Some(is_none) = filter.#field_is_none {
+                                if let Some(is_none) = self.#field_is_none {
                                     if is_none {
                                         query_builder = query_builder.filter(#sql_table::#field.is_null());
                                     } else {
@@ -317,16 +317,16 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 });
 
                                 filtered_field_declarations.extend::<TokenStream2>(quote! {
-                                    #field_contains : Option<#inner_type_token_stream>,
-                                    #field_contains_any : Option<#inner_vec_token_stream>,
+                                    pub #field_contains : Option<#inner_type_token_stream>,
+                                    pub #field_contains_any : Option<#inner_vec_token_stream>,
                                 });
 
                                 query_builder_declarations.extend::<TokenStream2>(quote! {
-                                    if let Some(contains) = filter.#field_contains {
+                                    if let Some(contains) = self.#field_contains {
                                         query_builder = query_builder.filter(#sql_table::#field.eq_any(contains));
                                     }
 
-                                    if let Some(contains_any) = filter.#field_contains_any {
+                                    if let Some(contains_any) = self.#field_contains_any {
                                         query_builder = query_builder.filter(#sql_table::#field.overlaps(contains_any));
                                     }
                                 });
@@ -339,9 +339,9 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     return;
                 }
             }
-            filtered_field_declarations.extend::<TokenStream2>(quote! { #field : Option<#ftype>, });
+            filtered_field_declarations.extend::<TokenStream2>(quote! { pub #field : Option<#ftype>, });
             query_builder_declarations.extend::<TokenStream2>(quote! {
-                if let Some(value) = filter.#field {
+                if let Some(value) = self.#field {
                     query_builder = query_builder.filter(#sql_table::#field.eq(value));
                 }
             });
@@ -353,20 +353,19 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
     );
 
     let output = quote! {
+
+        use crate::util::*;
+        use crate::db_connection::*;
+        use diesel::prelude::*;
+
         #[derive(Default, Clone, Debug, Deserialize, PartialEq)]
         pub struct #struct_name {
-            limit: Option<i64>,
+            pub limit: Option<i64>,
             #filtered_field_declarations
-        }
-
-        mod sql {
-            use diesel::prelude::*;
-            use crate::util::*;
-            use crate::db_connection::*;
-            use super::*;
+        } impl #struct_name {
 
             pub fn #sql_filter_function_name(
-                filter: #struct_name,
+                self: &#struct_name,
                 pool: &PgPool,
             ) -> Result<Vec<#ident>, SqlError> {
 
@@ -379,7 +378,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 };
 
                 let mut query_builder = #sql_table::table
-                    .limit(filter.limit.unwrap_or(100))
+                    .limit(self.limit.unwrap_or(100))
                     .into_boxed();
 
                 #query_builder_declarations
@@ -392,6 +391,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     }
                 }
             }
+
         }
     };
 
