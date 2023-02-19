@@ -363,6 +363,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             use diesel::prelude::*;
             use crate::util::*;
             use crate::db_connection::*;
+            use super::*;
 
             pub fn #sql_filter_function_name(
                 filter: #struct_name,
