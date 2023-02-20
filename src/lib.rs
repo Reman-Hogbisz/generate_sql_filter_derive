@@ -86,13 +86,37 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
     let mut query_builder_declarations = TokenStream2::default();
 
-    const TYPES_THAT_HAVE_ORDERING: [&str; 12] = [
-        "f64", "i64", "u64", "f32", "i32", "u32", "i16", "u16", "i8", "u8", "usize", "isize",
+    const TYPES_THAT_HAVE_ORDERING: &[&'static str] = &[
+        "f64",
+        "i64",
+        "u64",
+        "f32",
+        "i32",
+        "u32",
+        "i16",
+        "u16",
+        "i8",
+        "u8",
+        "usize",
+        "isize",
     ];
 
-    const TYPES_WITH_PARTIAL_EQ: [&str; 15] = [
-        "f64", "i64", "u64", "f32", "i32", "u32", "i16", "u16", "i8", "u8", "usize", "isize",
-        "String", "bool", "char",
+    const TYPES_WITH_PARTIAL_EQ: &[&'static str] = &[
+        "f64",
+        "i64",
+        "u64",
+        "f32",
+        "i32",
+        "u32",
+        "i16",
+        "u16",
+        "i8",
+        "u8",
+        "usize",
+        "isize",
+        "String",
+        "bool",
+        "char",
     ];
 
     idents
@@ -177,43 +201,12 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             _ => (),
                         }
 
-                        if TYPES_THAT_HAVE_ORDERING.contains(&ident_str) {
-                            let field_gt = Ident::new(&format!("{}_gt", field), Span::call_site());
-                            let field_gte =
-                                Ident::new(&format!("{}_gte", field), Span::call_site());
-                            let field_lt = Ident::new(&format!("{}_lt", field), Span::call_site());
-                            let field_lte =
-                                Ident::new(&format!("{}_lte", field), Span::call_site());
-                            filtered_field_declarations.extend::<TokenStream2>(quote! {
-                                pub #field_gt : Option<#ftype>,
-                                pub #field_gte : Option<#ftype>,
-                                pub #field_lt : Option<#ftype>,
-                                pub #field_lte : Option<#ftype>,
-                            });
-
-                            query_builder_declarations.extend::<TokenStream2>(quote! {
-                                if let Some(gt) = self.#field_gt {
-                                    query_builder = query_builder.filter(#sql_table::#field.gt(gt));
-                                }
-
-                                if let Some(gte) = self.#field_gte {
-                                    query_builder = query_builder.filter(#sql_table::#field.ge(gte));
-                                }
-
-                                if let Some(lt) = self.#field_lt {
-                                    query_builder = query_builder.filter(#sql_table::#field.lt(lt));
-                                }
-
-                                if let Some(lte) = self.#field_lte {
-                                    query_builder = query_builder.filter(#sql_table::#field.le(lte));
-                                }
-                            });
-                        } else if t.to_token_stream().into_iter().any(|token| match token {
+                        if TYPES_THAT_HAVE_ORDERING.contains(&ident_str) || t.to_token_stream().into_iter().any(|token| match token {
                             proc_macro2::TokenTree::Ident(ident) => {
                                 TYPES_THAT_HAVE_ORDERING.contains(&ident.to_string().as_str())
                             }
                             _ => false,
-                        }) {
+                        }){
                             let field_gt = Ident::new(&format!("{}_gt", field), Span::call_site());
                             let field_gte =
                                 Ident::new(&format!("{}_gte", field), Span::call_site());
@@ -279,8 +272,52 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                     }
                                 }
                             });
+                        
+                            return;
                         }
-                        return;
+                        else if ftype
+                        .to_token_stream()
+                        .into_iter()
+                        .any(|token| match token {
+                            proc_macro2::TokenTree::Ident(ident) => {
+                                ident.to_string().as_str() == "NaiveDateTime"
+                            }
+                            _ => false,
+                        }) {
+                            let field_gt = Ident::new(&format!("{}_gt", field), Span::call_site());
+                            let field_gte =
+                                Ident::new(&format!("{}_gte", field), Span::call_site());
+                            let field_lt = Ident::new(&format!("{}_lt", field), Span::call_site());
+                            let field_lte =
+                                Ident::new(&format!("{}_lte", field), Span::call_site());
+                            filtered_field_declarations.extend::<TokenStream2>(quote! {
+                                pub #field_gt : Option<#ftype>,
+                                pub #field_gte : Option<#ftype>,
+                                pub #field_lt : Option<#ftype>,
+                                pub #field_lte : Option<#ftype>,
+                            });
+
+                            query_builder_declarations.extend::<TokenStream2>(quote! {
+                                if let Some(gt) = self.#field_gt {
+                                    query_builder = query_builder.filter(#sql_table::#field.gt(gt));
+                                }
+
+                                if let Some(gte) = self.#field_gte {
+                                    query_builder = query_builder.filter(#sql_table::#field.ge(gte));
+                                }
+
+                                if let Some(lt) = self.#field_lt {
+                                    query_builder = query_builder.filter(#sql_table::#field.lt(lt));
+                                }
+
+                                if let Some(lte) = self.#field_lte {
+                                    query_builder = query_builder.filter(#sql_table::#field.le(lte));
+                                }
+                            });
+
+                        } else {
+                            return;
+                        }
                     }
                 }
                 _ => {
