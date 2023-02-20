@@ -161,15 +161,15 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 });
 
                                 query_builder_declarations.extend::<TokenStream2>(quote! {
-                                    if let Some(contains) = self.#field_contains {
+                                    if let Some(contains) = self.#field_contains.as_ref() {
                                         query_builder = query_builder.filter(#sql_table::#field.like(format!("%{}%", contains)));
                                     }
 
-                                    if let Some(starts_with) = self.#field_starts_with {
+                                    if let Some(starts_with) = self.#field_starts_with.as_ref() {
                                         query_builder = query_builder.filter(#sql_table::#field.like(format!("{}%", starts_with)));
                                     }
 
-                                    if let Some(ends_with) = self.#field_ends_with {
+                                    if let Some(ends_with) = self.#field_ends_with.as_ref() {
                                         query_builder = query_builder.filter(#sql_table::#field.like(format!("%{}", ends_with)));
                                     }
                                 });
@@ -267,7 +267,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             });
 
                             query_builder_declarations.extend::<TokenStream2>(quote! {
-                                if let Some(is_some) = self.#field_is_some {
+                                if let Some(is_some) = &self.#field_is_some {
                                     query_builder = query_builder.filter(#sql_table::#field.eq(is_some));
                                 }
 
@@ -279,58 +279,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                     }
                                 }
                             });
-
-                            if ftype
-                                .to_token_stream()
-                                .into_iter()
-                                .any(|token| match token {
-                                    proc_macro2::TokenTree::Ident(ident) => {
-                                        ident.to_string().as_str() == "Vec"
-                                    }
-                                    _ => false,
-                                })
-                            {
-                                let field_contains =
-                                    Ident::new(&format!("{}_contains", field), Span::call_site());
-                                let field_contains_any = Ident::new(
-                                    &format!("{}_contains_any", field),
-                                    Span::call_site(),
-                                );
-
-                                let full_type_token_stream =
-                                    ftype.to_token_stream().into_iter().collect::<Vec<_>>();
-
-                                let vec_token_stream_slice =
-                                    &full_type_token_stream[2..full_type_token_stream.len() - 1];
-                                let mut inner_vec_token_stream = TokenStream2::new();
-                                vec_token_stream_slice.iter().for_each(|token| {
-                                    inner_vec_token_stream
-                                        .extend::<TokenStream2>(quote! { #token });
-                                });
-
-                                let inner_type_token_stream_slice =
-                                    &vec_token_stream_slice[2..vec_token_stream_slice.len() - 1];
-                                let mut inner_type_token_stream = TokenStream2::new();
-                                inner_type_token_stream_slice.iter().for_each(|token| {
-                                    inner_type_token_stream
-                                        .extend::<TokenStream2>(quote! { #token });
-                                });
-
-                                filtered_field_declarations.extend::<TokenStream2>(quote! {
-                                    pub #field_contains : Option<#inner_type_token_stream>,
-                                    pub #field_contains_any : Option<#inner_vec_token_stream>,
-                                });
-
-                                query_builder_declarations.extend::<TokenStream2>(quote! {
-                                    if let Some(contains) = self.#field_contains {
-                                        query_builder = query_builder.filter(#sql_table::#field.eq_any(contains));
-                                    }
-
-                                    if let Some(contains_any) = self.#field_contains_any {
-                                        query_builder = query_builder.filter(#sql_table::#field.overlaps(contains_any));
-                                    }
-                                });
-                            }
                         }
                         return;
                     }
@@ -341,7 +289,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             }
             filtered_field_declarations.extend::<TokenStream2>(quote! { pub #field : Option<#ftype>, });
             query_builder_declarations.extend::<TokenStream2>(quote! {
-                if let Some(value) = self.#field {
+                if let Some(value) = &self.#field {
                     query_builder = query_builder.filter(#sql_table::#field.eq(value));
                 }
             });
@@ -365,7 +313,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         } impl #struct_name {
 
             pub fn #sql_filter_function_name(
-                self: &#struct_name,
+                &self,
                 pool: &PgPool,
             ) -> Result<Vec<#ident>, SqlError> {
 
