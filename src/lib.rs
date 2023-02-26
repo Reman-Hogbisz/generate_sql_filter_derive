@@ -357,7 +357,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 let connection = match pool.get() {
                     Ok(connection) => connection,
                     Err(e) => {
-                        eprintln!("Failed to get pooled connection with error '{}'", e);
+                        error!("Failed to get pooled connection with error '{}'", e);
                         return Err(SqlError::ConnectionError);
                     }
                 };
@@ -371,7 +371,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 match query_builder.load::<#ident>(&connection) {
                     Ok(vals) => Ok(vals),
                     Err(e) => {
-                        eprintln!("Failed to get {} with error '{}'", stringify!(#ident), e);
+                        error!("Failed to get {} with error '{}'", stringify!(#ident), e);
                         return Err(SqlError::DieselError(e));
                     }
                 }
