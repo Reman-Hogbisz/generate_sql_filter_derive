@@ -280,7 +280,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                         .into_iter()
                         .any(|token| match token {
                             proc_macro2::TokenTree::Ident(ident) => {
-                                ident.to_string().as_str() == "NaiveDateTime"
+                                ident.to_string().as_str() == "NaiveDateTime" || ident.to_string().as_str() == "NaiveDate"
                             }
                             _ => false,
                         }) {
