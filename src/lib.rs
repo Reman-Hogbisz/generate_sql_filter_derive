@@ -324,10 +324,18 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     return;
                 }
             }
-            filtered_field_declarations.extend::<TokenStream2>(quote! { pub #field : Option<#ftype>, });
+            let field_not = Ident::new(&format!("{}_not", field), Span::call_site());
+            filtered_field_declarations.extend::<TokenStream2>(quote! { 
+                pub #field : Option<#ftype>, 
+                pub #field_not : Option<#ftype>,
+            });
             query_builder_declarations.extend::<TokenStream2>(quote! {
                 if let Some(value) = &self.#field {
                     query_builder = query_builder.filter(#sql_table::#field.eq(value));
+                }
+
+                if let Some(value) = &self.#field_not {
+                    query_builder = query_builder.filter(#sql_table::#field.ne(value));
                 }
             });
         });
