@@ -117,7 +117,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         "String",
         "bool",
         "char",
-        "uuid",
+        "Uuid",
     ];
 
     idents
