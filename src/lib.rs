@@ -92,7 +92,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
     let mut field_sort_by_enum_declarations = TokenStream2::default();
 
-    let mut field_sort_declerations = TokenStream2::default();
+    let mut field_sort_declarations = TokenStream2::default();
 
     let mut query_builder_declarations = TokenStream2::default();
 
@@ -337,10 +337,10 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 #sort_by_field,
                             });
 
-                            field_sort_declerations.extend::<TokenStream2>(quote! {
+                            field_sort_declarations.extend::<TokenStream2>(quote! {
                                 #sort_by_field => query_builder.order(match sort_by {
-                                    SortBy::Asc => #sql_table::#field.asc(),
-                                    SortBy::Desc => #sql_table::#field.desc(),
+                                    FilterSortOrder::Asc => #sql_table::#field.asc(),
+                                    FilterSortOrder::Desc => #sql_table::#field.desc(),
                                 }),
                             });
                         
@@ -434,10 +434,10 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 #sort_by_field,
             });
 
-            field_sort_declerations.extend::<TokenStream2>(quote! {
+            field_sort_declarations.extend::<TokenStream2>(quote! {
                 #sort_by_field => query_builder.order(match sort_by {
-                    SortBy::Asc => #sql_table::#field.asc(),
-                    SortBy::Desc => #sql_table::#field.desc(),
+                    FilterSortOrder::Asc => #sql_table::#field.asc(),
+                    FilterSortOrder::Desc => #sql_table::#field.desc(),
                 }),
             });
         });
@@ -452,17 +452,30 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         Span::call_site(),
     );
 
+    let enum_name = Ident::new(
+        &format!("{}SortBy", ident.to_string()),
+        Span::call_site(),
+    );
+
     let output = quote! {
 
         use crate::util::*;
         use crate::db_connection::*;
         use diesel::prelude::*;
+        use ts_rs::TS;
+
+        #[derive(TS, Clone, Debug, Deserialize, PartialEq)]
+        #[ts(export)]
+        pub enum #enum_name {
+            #field_sort_by_enum_declarations
+        }
 
         #[derive(Default, Clone, Debug, Deserialize, PartialEq)]
         pub struct #struct_name {
             pub limit: Option<i64>,
             pub page: Option<i64>,
-            pub sort_by: Option<FilterSortOrder>,
+            pub sort_by: Option<#enum_name>,
+            pub sort_order: Option<FilterSortOrder>,
             #filtered_field_declarations
         } impl #struct_name {
 
@@ -532,6 +545,15 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     .into_boxed();
 
                 #query_builder_declarations
+
+                match (self.sort_by, self.sort_order) {
+                    (Some(sort_by), Some(sort_order)) => {
+                        query_builder = match sort_by {
+                            #field_sort_declarations
+                        };
+                    }
+                    _ => {}
+                }
 
                 let count = match query_builder.count().get_result::<i64>(&connection) {
                     Ok(count) => count,
