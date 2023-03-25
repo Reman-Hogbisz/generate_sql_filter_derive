@@ -4,22 +4,25 @@ use proc_macro2::{Ident, Span};
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, DeriveInput, FieldsNamed};
 
-fn to_camel_case(mut s: String) -> String {
+fn to_camel_case<S: ToString>(s_raw: S) -> String {
+    let mut s = s_raw.to_string();
     if let Some(r) = s.get_mut(0..1) {
         r.make_ascii_uppercase();
     }
 
     let mut chars = s.chars().peekable();
+    let mut output = String::new();
     while let Some(c) = chars.next() {
         if c == '_' {
             if let Some(r) = chars.peek_mut() {
                 r.make_ascii_uppercase();
             }
+        } else {
+            output.push(c);
         }
     }
 
-    s.retain(|c| c != '_');
-    s
+    output
 }
 
 #[proc_macro_derive(CreateFilter, attributes(filter_name, sql_path))]
