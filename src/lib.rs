@@ -209,6 +209,8 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             _ => false,
                         }){
                             let field_in = Ident::new(&format!("{}_in", field), Span::call_site());
+                            let field_not_in =
+                                Ident::new(&format!("{}_not_in", field), Span::call_site());
                             let field_gt = Ident::new(&format!("{}_gt", field), Span::call_site());
                             let field_gte =
                                 Ident::new(&format!("{}_gte", field), Span::call_site());
@@ -217,6 +219,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 Ident::new(&format!("{}_lte", field), Span::call_site());
                             filtered_field_declarations.extend::<TokenStream2>(quote! {
                                 pub #field_in : Option<Vec<#ftype>>,
+                                pub #field_not_in : Option<Vec<#ftype>>,
                                 pub #field_gt : Option<#ftype>,
                                 pub #field_gte : Option<#ftype>,
                                 pub #field_lt : Option<#ftype>,
@@ -227,6 +230,10 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                                 if let Some(val_in) = self.#field_in.as_ref() {
                                     query_builder = query_builder.filter(#sql_table::#field.eq_any(val_in));
+                                }
+
+                                if let Some(val_not_in) = self.#field_not_in.as_ref() {
+                                    query_builder = query_builder.filter(#sql_table::#field.ne_all(val_not_in));
                                 }
 
                                 if let Some(gt) = self.#field_gt {
@@ -323,6 +330,8 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                         }) {
                             let field_in =
                                 Ident::new(&format!("{}_in", field), Span::call_site());
+                            let field_not_in =
+                                Ident::new(&format!("{}_not_in", field), Span::call_site());
                             let field_gt = Ident::new(&format!("{}_gt", field), Span::call_site());
                             let field_gte =
                                 Ident::new(&format!("{}_gte", field), Span::call_site());
@@ -331,6 +340,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 Ident::new(&format!("{}_lte", field), Span::call_site());
                             filtered_field_declarations.extend::<TokenStream2>(quote! {
                                 pub #field_in : Option<Vec<#ftype>>,
+                                pub #field_not_in : Option<Vec<#ftype>>,
                                 pub #field_gt : Option<#ftype>,
                                 pub #field_gte : Option<#ftype>,
                                 pub #field_lt : Option<#ftype>,
@@ -340,6 +350,10 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             query_builder_declarations.extend::<TokenStream2>(quote! {
                                 if let Some(val_in) = self.#field_in.as_ref() {
                                     query_builder = query_builder.filter(#sql_table::#field.eq_any(val_in));
+                                }
+
+                                if let Some(val_not_in) = self.#field_not_in.as_ref() {
+                                    query_builder = query_builder.filter(#sql_table::#field.ne_all(val_not_in));
                                 }
 
                                 if let Some(gt) = self.#field_gt {
