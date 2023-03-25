@@ -462,7 +462,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         pub struct #struct_name {
             pub limit: Option<i64>,
             pub page: Option<i64>,
-            pub sort_by: Option<FilterSortBy>,
+            pub sort_by: Option<FilterSortOrder>,
             #filtered_field_declarations
         } impl #struct_name {
 
