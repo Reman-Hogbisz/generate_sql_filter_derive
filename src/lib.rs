@@ -564,7 +564,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 }
             }
 
-            pub fn get_query_builder(&self) -> BoxedQuery<#sql_table, #sql_table::SqlType> {
+            pub fn get_query_builder(&self) -> diesel::query_builder::BoxedSelectStatement<#sql_table, #sql_table::SqlType> {
                 let mut query_builder = #sql_table::table.into_boxed();
 
                 #query_builder_declarations
