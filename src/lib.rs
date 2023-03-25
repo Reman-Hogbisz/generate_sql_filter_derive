@@ -496,9 +496,12 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     }
                 };
                 
-                query_builder
+                let mut query_builder = #sql_table::table
                     .offset(page * limit)
-                    .limit(limit);
+                    .limit(limit)
+                    .into_boxed();
+
+                #query_builder_declarations
 
                 let pages = if limit == 0 {
                     1
