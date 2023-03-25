@@ -338,7 +338,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             });
 
                             field_sort_declarations.extend::<TokenStream2>(quote! {
-                                #sort_by_field => query_builder.order(match sort_by {
+                                #sort_by_field => query_builder.order(match sort_order {
                                     FilterSortOrder::Asc => #sql_table::#field.asc(),
                                     FilterSortOrder::Desc => #sql_table::#field.desc(),
                                 }),
@@ -435,7 +435,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             });
 
             field_sort_declarations.extend::<TokenStream2>(quote! {
-                #sort_by_field => query_builder.order(match sort_by {
+                #sort_by_field => query_builder.order(match sort_order {
                     FilterSortOrder::Asc => #sql_table::#field.asc(),
                     FilterSortOrder::Desc => #sql_table::#field.desc(),
                 }),
