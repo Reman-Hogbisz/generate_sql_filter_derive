@@ -4,10 +4,22 @@ use proc_macro2::{Ident, Span};
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, DeriveInput, FieldsNamed};
 
-fn make_ascii_titlecase(s: &mut str) {
+fn to_camel_case(mut s: String) -> String {
     if let Some(r) = s.get_mut(0..1) {
         r.make_ascii_uppercase();
     }
+
+    let mut chars = s.chars().peekable();
+    while let Some(c) = chars.next() {
+        if c == '_' {
+            if let Some(r) = chars.peek_mut() {
+                r.make_ascii_uppercase();
+            }
+        }
+    }
+
+    s.retain(|c| c != '_');
+    s
 }
 
 #[proc_macro_derive(CreateFilter, attributes(filter_name, sql_path))]
@@ -327,8 +339,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 }
                             });
 
-                            let mut sort_by_field_name = field.to_string();
-                            make_ascii_titlecase(&mut sort_by_field_name);
+                            let sort_by_field_name = to_camel_case(field.to_string());
                             let sort_by_field = Ident::new(
                                 &sort_by_field_name,
                                 Span::call_site(),
@@ -428,8 +439,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 }
             });
 
-            let mut sort_by_field_name = field.to_string();
-            make_ascii_titlecase(&mut sort_by_field_name);
+            let sort_by_field_name = to_camel_case(field.to_string());
             let sort_by_field = Ident::new(
                 &sort_by_field_name,
                 Span::call_site(),
