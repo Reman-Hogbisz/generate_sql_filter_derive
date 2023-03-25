@@ -390,6 +390,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         #[derive(Default, Clone, Debug, Deserialize, PartialEq)]
         pub struct #struct_name {
             pub limit: Option<i64>,
+            pub page: Option<i64>,
             #filtered_field_declarations
         } impl #struct_name {
 
@@ -408,6 +409,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 let mut query_builder = #sql_table::table
                     .limit(self.limit.unwrap_or(100))
+                    .offset(self.page.unwrap_or(0) * self.limit.unwrap_or(100))
                     .into_boxed();
 
                 #query_builder_declarations
