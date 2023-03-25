@@ -338,14 +338,14 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             });
 
                             field_sort_declarations.extend::<TokenStream2>(quote! {
-                                #sort_by_field => query_builder.order(match sort_order {
+                                #sort_by_field => match sort_order {
                                     FilterSortOrder::Asc => {
-                                        query_builder = query_builder.order(#sql_table::#field.asc())
+                                        query_builder = query_builder.order(#sql_table::#field.asc());
                                     },
                                     FilterSortOrder::Desc =>{
-                                        query_builder = query_builder.order(#sql_table::#field.desc())
+                                        query_builder = query_builder.order(#sql_table::#field.desc());
                                     },
-                                }),
+                                },
                             });
                         
                             return;
@@ -439,14 +439,14 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             });
 
             field_sort_declarations.extend::<TokenStream2>(quote! {
-                #sort_by_field => query_builder.order(match sort_order {
+                #sort_by_field => match sort_order {
                     FilterSortOrder::Asc => {
-                        query_builder = query_builder.order(#sql_table::#field.asc())
+                        query_builder = query_builder.order(#sql_table::#field.asc());
                     },
                     FilterSortOrder::Desc =>{
-                        query_builder = query_builder.order(#sql_table::#field.desc())
+                        query_builder = query_builder.order(#sql_table::#field.desc());
                     },
-                }),
+                },
             });
         });
 
