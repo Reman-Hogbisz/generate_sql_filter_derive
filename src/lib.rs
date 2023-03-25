@@ -411,8 +411,8 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
         #[derive(Default, Clone, Debug, Deserialize, PartialEq)]
         pub struct #struct_name {
-            pub limit: Option<u64>,
-            pub page: Option<u64>,
+            pub limit: Option<i64>,
+            pub page: Option<i64>,
             #filtered_field_declarations
         } impl #struct_name {
 
@@ -452,7 +452,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 let pages = if limit == 0 {
                     1
                 } else {
-                    (count as f64 / limit as f64).ceil() as u64
+                    (count as f64 / limit as f64).ceil() as i64
                 };
                 
 
