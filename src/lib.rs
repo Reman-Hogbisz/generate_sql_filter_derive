@@ -481,7 +481,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         use crate::db_connection::*;
         use diesel::prelude::*;
 
-        #[derive(TS, Clone, Debug, Deserialize, PartialEq)]
+        #[derive(TS, Clone, Copy, Debug, Deserialize, PartialEq)]
         #[ts(export)]
         pub enum #enum_name {
             #field_sort_by_enum_declarations
