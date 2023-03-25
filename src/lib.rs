@@ -286,11 +286,19 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 }
 
                                 if let Some(is_not_some) = &self.#field_is_not_some {
-                                    query_builder = query_builder.filter(#sql_table::#field.ne(is_not_some));
+                                    if self.#field_is_none.is_none() {
+                                        query_builder = query_builder.filter(#sql_table::#field.ne(is_not_some).or(#sql_table::#field.is_null()));
+                                    } else {
+                                        query_builder = query_builder.filter(#sql_table::#field.ne(is_not_some));
+                                    }
                                 }
 
                                 if let Some(is_not_some_in) = &self.#field_is_not_some_in {
-                                    query_builder = query_builder.filter(#sql_table::#field.ne_all(is_not_some_in));
+                                    if self.#field_is_none.is_none() {
+                                        query_builder = query_builder.filter(#sql_table::#field.ne_all(is_not_some_in).or(#sql_table::#field.is_null()));
+                                    } else {
+                                        query_builder = query_builder.filter(#sql_table::#field.ne_all(is_not_some_in));
+                                    }
                                 }
 
                                 if let Some(is_none) = self.#field_is_none {
