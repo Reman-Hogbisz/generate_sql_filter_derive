@@ -411,15 +411,15 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
         #[derive(Default, Clone, Debug, Deserialize, PartialEq)]
         pub struct #struct_name {
-            pub limit: Option<i64>,
-            pub page: Option<i64>,
+            pub limit: Option<u64>,
+            pub page: Option<u64>,
             #filtered_field_declarations
         } impl #struct_name {
 
             pub fn #sql_filter_function_name(
                 &self,
                 pool: &PgPool,
-            ) -> Result<Vec<#ident>, SqlError> {
+            ) -> Result<(Vec<#ident>, i64), SqlError> {
 
                 let connection = match pool.get() {
                     Ok(connection) => connection,
@@ -430,14 +430,34 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 };
 
                 let mut query_builder = #sql_table::table
-                    .limit(self.limit.unwrap_or(100))
-                    .offset(self.page.unwrap_or(0) * self.limit.unwrap_or(100))
                     .into_boxed();
 
                 #query_builder_declarations
 
+                let mut count_builder = query_builder.clone();
+
+                let count = match count_builder.count().get_result::<i64>(&connection) {
+                    Ok(count) => count,
+                    Err(e) => {
+                        error!("Failed to get count of {} with error '{}'", stringify!(#ident), e);
+                        return Err(SqlError::DieselError(e));
+                    }
+                };
+
+                let limit = self.limit.unwrap_or(100);
+                query_builder
+                    .offset(self.page.unwrap_or(0) * limit)
+                    .limit(limit);
+
+                let pages = if limit == 0 {
+                    1
+                } else {
+                    (count as f64 / limit as f64).ceil() as u64
+                };
+                
+
                 match query_builder.load::<#ident>(&connection) {
-                    Ok(vals) => Ok(vals),
+                    Ok(vals) => Ok((vals, pages)),
                     Err(e) => {
                         error!("Failed to get {} with error '{}'", stringify!(#ident), e);
                         return Err(SqlError::DieselError(e));
