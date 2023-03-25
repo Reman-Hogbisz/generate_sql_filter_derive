@@ -4,6 +4,12 @@ use proc_macro2::{Ident, Span};
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, DeriveInput, FieldsNamed};
 
+fn make_ascii_titlecase(s: &mut str) {
+    if let Some(r) = s.get_mut(0..1) {
+        r.make_ascii_uppercase();
+    }
+}
+
 #[proc_macro_derive(CreateFilter, attributes(filter_name, sql_path))]
 pub fn create_filter(input: TokenStream) -> TokenStream {
     let DeriveInput {
@@ -83,6 +89,10 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         .unzip();
 
     let mut filtered_field_declarations = TokenStream2::default();
+
+    let mut field_sort_by_enum_declarations = TokenStream2::default();
+
+    let mut field_sort_declerations = TokenStream2::default();
 
     let mut query_builder_declarations = TokenStream2::default();
 
@@ -316,6 +326,23 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                     }
                                 }
                             });
+
+                            let mut sort_by_field_name = field.to_string();
+                            make_ascii_titlecase(&mut sort_by_field_name);
+                            let sort_by_field = Ident::new(
+                                &sort_by_field_name,
+                                Span::call_site(),
+                            );
+                            field_sort_by_enum_declarations.extend::<TokenStream2>(quote! {
+                                #sort_by_field,
+                            });
+
+                            field_sort_declerations.extend::<TokenStream2>(quote! {
+                                #sort_by_field => query_builder.order(match sort_by {
+                                    SortBy::Asc => #sql_table::#field.asc(),
+                                    SortBy::Desc => #sql_table::#field.desc(),
+                                }),
+                            });
                         
                             return;
                         }
@@ -396,6 +423,23 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     query_builder = query_builder.filter(#sql_table::#field.ne(value));
                 }
             });
+
+            let mut sort_by_field_name = field.to_string();
+            make_ascii_titlecase(&mut sort_by_field_name);
+            let sort_by_field = Ident::new(
+                &sort_by_field_name,
+                Span::call_site(),
+            );
+            field_sort_by_enum_declarations.extend::<TokenStream2>(quote! {
+                #sort_by_field,
+            });
+
+            field_sort_declerations.extend::<TokenStream2>(quote! {
+                #sort_by_field => query_builder.order(match sort_by {
+                    SortBy::Asc => #sql_table::#field.asc(),
+                    SortBy::Desc => #sql_table::#field.desc(),
+                }),
+            });
         });
 
     let sql_filter_function_name = Ident::new(
@@ -418,6 +462,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         pub struct #struct_name {
             pub limit: Option<i64>,
             pub page: Option<i64>,
+            pub sort_by: Option<FilterSortBy>,
             #filtered_field_declarations
         } impl #struct_name {
 
@@ -519,6 +564,13 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 }
             }
 
+            pub fn get_query_builder(&self) -> BoxedQuery<#sql_table, #sql_table::SqlType> {
+                let mut query_builder = #sql_table::table.into_boxed();
+
+                #query_builder_declarations
+
+                query_builder
+            }
         }
     };
 
