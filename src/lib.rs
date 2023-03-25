@@ -434,9 +434,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 #query_builder_declarations
 
-                let mut count_builder = query_builder.clone();
-
-                let count = match count_builder.count().get_result::<i64>(&connection) {
+                let count = match query_builder.count().get_result::<i64>(&connection) {
                     Ok(count) => count,
                     Err(e) => {
                         error!("Failed to get count of {} with error '{}'", stringify!(#ident), e);
