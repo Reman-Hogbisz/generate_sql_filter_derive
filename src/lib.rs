@@ -403,6 +403,11 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         Span::call_site(),
     );
 
+    let sql_filter_with_count_function_name = Ident::new(
+        &format!("filter_with_count_{}", ident.to_string().to_lowercase()),
+        Span::call_site(),
+    );
+
     let output = quote! {
 
         use crate::util::*;
@@ -419,6 +424,45 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             pub fn #sql_filter_function_name(
                 &self,
                 pool: &PgPool,
+            ) -> Result<Vec<#ident>, SqlError> {
+
+                let connection = match pool.get() {
+                    Ok(connection) => connection,
+                    Err(e) => {
+                        error!("Failed to get pooled connection with error '{}'", e);
+                        return Err(SqlError::ConnectionError);
+                    }
+                };
+
+                let mut limit = self.limit.unwrap_or(100);
+                if limit < 0 {
+                    limit = 100;
+                }
+
+                let mut page = self.page.unwrap_or(0);
+                if page < 0 {
+                    page = 0;
+                }
+
+                let mut query_builder = #sql_table::table
+                    .offset(page * limit)
+                    .limit(limit)
+                    .into_boxed();
+
+                #query_builder_declarations
+
+                match query_builder.load::<#ident>(&connection) {
+                    Ok(vals) => Ok(vals),
+                    Err(e) => {
+                        error!("Failed to get {} with error '{}'", stringify!(#ident), e);
+                        return Err(SqlError::DieselError(e));
+                    }
+                }
+            }
+
+            pub fn #sql_filter_with_count_function_name(
+                &self,
+                pool: &PgPool,
             ) -> Result<(Vec<#ident>, i64), SqlError> {
 
                 let connection = match pool.get() {
@@ -428,6 +472,16 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                         return Err(SqlError::ConnectionError);
                     }
                 };
+
+                let mut limit = self.limit.unwrap_or(100);
+                if limit < 0 {
+                    limit = 100;
+                }
+
+                let mut page = self.page.unwrap_or(0);
+                if page < 0 {
+                    page = 0;
+                }
 
                 let mut query_builder = #sql_table::table
                     .into_boxed();
@@ -441,10 +495,9 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                         return Err(SqlError::DieselError(e));
                     }
                 };
-
-                let limit = self.limit.unwrap_or(100);
+                
                 query_builder
-                    .offset(self.page.unwrap_or(0) * limit)
+                    .offset(page * limit)
                     .limit(limit);
 
                 let pages = if limit == 0 {
