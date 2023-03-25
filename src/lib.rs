@@ -567,13 +567,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 #query_builder_declarations
 
-                match (self.sort_by, self.sort_order) {
-                    (Some(sort_by), Some(sort_order)) => match sort_by {
-                        #field_sort_declarations
-                    },
-                    _ => {}
-                }
-
                 let count = match query_builder.count().get_result::<i64>(&connection) {
                     Ok(count) => count,
                     Err(e) => {
@@ -588,6 +581,13 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     .into_boxed();
 
                 #query_builder_declarations
+
+                match (self.sort_by, self.sort_order) {
+                    (Some(sort_by), Some(sort_order)) => match sort_by {
+                        #field_sort_declarations
+                    },
+                    _ => {}
+                }
 
                 let pages = if limit == 0 {
                     1
