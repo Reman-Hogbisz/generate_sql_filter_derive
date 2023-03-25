@@ -490,7 +490,8 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             #field_sort_by_enum_declarations
         }
 
-        #[derive(Default, Clone, Debug, Deserialize, PartialEq)]
+        #[derive(TS, Default, Clone, Debug, Deserialize, PartialEq)]
+        #[ts(export)]
         pub struct #struct_name {
             pub limit: Option<i64>,
             pub page: Option<i64>,
