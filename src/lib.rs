@@ -530,6 +530,13 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 #query_builder_declarations
 
+                match (self.sort_by, self.sort_order) {
+                    (Some(sort_by), Some(sort_order)) => match sort_by {
+                        #field_sort_declarations
+                    },
+                    _ => {}
+                }
+
                 match query_builder.load::<#ident>(&connection) {
                     Ok(vals) => Ok(vals),
                     Err(e) => {
