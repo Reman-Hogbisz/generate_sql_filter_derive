@@ -259,17 +259,38 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                         {
                             let field_is_some =
                                 Ident::new(&format!("{}_is_some", field), Span::call_site());
+                            let field_is_some_in =
+                                Ident::new(&format!("{}_is_some_in", field), Span::call_site());
+                            let field_is_not_some =
+                                Ident::new(&format!("{}_is_not_some", field), Span::call_site());
+                            let field_is_not_some_in =
+                                Ident::new(&format!("{}_is_not_some_in", field), Span::call_site());
                             let field_is_none =
                                 Ident::new(&format!("{}_is_none", field), Span::call_site());
 
                             filtered_field_declarations.extend::<TokenStream2>(quote! {
                                 pub #field_is_some : #ftype,
+                                pub #field_is_some_in : Option<Vec<#ftype>>,
+                                pub #field_is_not_some : #ftype,
+                                pub #field_is_not_some_in : Option<Vec<#ftype>>,
                                 pub #field_is_none : Option<bool>,
                             });
 
                             query_builder_declarations.extend::<TokenStream2>(quote! {
                                 if let Some(is_some) = &self.#field_is_some {
                                     query_builder = query_builder.filter(#sql_table::#field.eq(is_some));
+                                }
+
+                                if let Some(is_some_in) = &self.#field_is_some_in {
+                                    query_builder = query_builder.filter(#sql_table::#field.eq_any(is_some_in));
+                                }
+
+                                if let Some(is_not_some) = &self.#field_is_not_some {
+                                    query_builder = query_builder.filter(#sql_table::#field.ne(is_not_some));
+                                }
+
+                                if let Some(is_not_some_in) = &self.#field_is_not_some_in {
+                                    query_builder = query_builder.filter(#sql_table::#field.ne_all(is_not_some_in));
                                 }
 
                                 if let Some(is_none) = self.#field_is_none {
