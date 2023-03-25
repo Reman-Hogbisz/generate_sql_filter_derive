@@ -270,7 +270,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                             filtered_field_declarations.extend::<TokenStream2>(quote! {
                                 pub #field_is_some : #ftype,
-                                pub #field_is_some_in : #ftype,
+                                pub #field_is_some_in : Option<Vec<#ftype>>,
                                 pub #field_is_not_some : #ftype,
                                 pub #field_is_not_some_in : Option<Vec<#ftype>>,
                                 pub #field_is_none : Option<bool>,
