@@ -339,8 +339,12 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                             field_sort_declarations.extend::<TokenStream2>(quote! {
                                 #sort_by_field => query_builder.order(match sort_order {
-                                    FilterSortOrder::Asc => #sql_table::#field.asc(),
-                                    FilterSortOrder::Desc => #sql_table::#field.desc(),
+                                    FilterSortOrder::Asc => {
+                                        query_builder = query_builder.order(#sql_table::#field.asc())
+                                    },
+                                    FilterSortOrder::Desc =>{
+                                        query_builder = query_builder.order(#sql_table::#field.desc())
+                                    },
                                 }),
                             });
                         
@@ -436,8 +440,12 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
             field_sort_declarations.extend::<TokenStream2>(quote! {
                 #sort_by_field => query_builder.order(match sort_order {
-                    FilterSortOrder::Asc => #sql_table::#field.asc(),
-                    FilterSortOrder::Desc => #sql_table::#field.desc(),
+                    FilterSortOrder::Asc => {
+                        query_builder = query_builder.order(#sql_table::#field.asc())
+                    },
+                    FilterSortOrder::Desc =>{
+                        query_builder = query_builder.order(#sql_table::#field.desc())
+                    },
                 }),
             });
         });
@@ -462,7 +470,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         use crate::util::*;
         use crate::db_connection::*;
         use diesel::prelude::*;
-        use ts_rs::TS;
 
         #[derive(TS, Clone, Debug, Deserialize, PartialEq)]
         #[ts(export)]
@@ -547,11 +554,9 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 #query_builder_declarations
 
                 match (self.sort_by, self.sort_order) {
-                    (Some(sort_by), Some(sort_order)) => {
-                        query_builder = match sort_by {
-                            #field_sort_declarations
-                        };
-                    }
+                    (Some(sort_by), Some(sort_order)) => match sort_by {
+                        #field_sort_declarations
+                    },
                     _ => {}
                 }
 
