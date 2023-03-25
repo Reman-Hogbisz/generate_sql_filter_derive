@@ -493,8 +493,8 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         #[derive(TS, Default, Clone, Debug, Deserialize, PartialEq)]
         #[ts(export)]
         pub struct #struct_name {
-            pub limit: Option<i64>,
-            pub page: Option<i64>,
+            pub limit: Option<i32>,
+            pub page: Option<i32>,
             pub sort_by: Option<#enum_name>,
             pub sort_order: Option<FilterSortOrder>,
             #filtered_field_declarations
@@ -552,12 +552,12 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     }
                 };
 
-                let mut limit = self.limit.unwrap_or(100);
+                let mut limit = self.limit.unwrap_or(100) as i64;
                 if limit < 0 {
                     limit = 100;
                 }
 
-                let mut page = self.page.unwrap_or(0);
+                let mut page = self.page.unwrap_or(0) as i64;
                 if page < 0 {
                     page = 0;
                 }
