@@ -103,6 +103,11 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         })
         .unzip();
 
+    let enum_name = Ident::new(
+        &format!("{}SortBy", ident.to_string()),
+        Span::call_site(),
+    );
+
     let mut filtered_field_declarations = TokenStream2::default();
 
     let mut field_sort_by_enum_declarations = TokenStream2::default();
@@ -352,11 +357,17 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             });
 
                             field_sort_declarations.extend::<TokenStream2>(quote! {
-                                #sort_by_field => match sort_order {
+                                #enum_name::#sort_by_field => match sort_order {
                                     FilterSortOrder::Asc => {
+                                        if cfg!(debug_assertions) {
+                                            info!("Sorting by {} ({}) in ascending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
+                                        }
                                         query_builder = query_builder.order(#sql_table::#field.asc());
                                     },
                                     FilterSortOrder::Desc =>{
+                                        if cfg!(debug_assertions) {
+                                            info!("Sorting by {} ({}) in descending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
+                                        }
                                         query_builder = query_builder.order(#sql_table::#field.desc());
                                     },
                                 },
@@ -452,7 +463,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             });
 
             field_sort_declarations.extend::<TokenStream2>(quote! {
-                #sort_by_field => match sort_order {
+                #enum_name::#sort_by_field => match sort_order {
                     FilterSortOrder::Asc => {
                         if cfg!(debug_assertions) {
                             info!("Sorting by {} ({}) in ascending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
@@ -476,11 +487,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
     let sql_filter_with_count_function_name = Ident::new(
         &format!("filter_with_count_{}", ident.to_string().to_lowercase()),
-        Span::call_site(),
-    );
-
-    let enum_name = Ident::new(
-        &format!("{}SortBy", ident.to_string()),
         Span::call_site(),
     );
 
@@ -538,6 +544,9 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 match (self.sort_by, self.sort_order) {
                     (Some(sort_by), Some(sort_order)) => match sort_by {
+                        if cfg!(debug_assertions) {
+                            info!("Query Filter found Some(sort_by) = {:?} and Some(sort_order) = {:?}", sort_by, sort_order);
+                        }
                         #field_sort_declarations
                     },
                     _ => {}
