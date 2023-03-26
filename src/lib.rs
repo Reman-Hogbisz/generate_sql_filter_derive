@@ -454,9 +454,15 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             field_sort_declarations.extend::<TokenStream2>(quote! {
                 #sort_by_field => match sort_order {
                     FilterSortOrder::Asc => {
+                        if cfg!(debug_assertions) {
+                            info!("Sorting by {} ({}) in ascending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
+                        }
                         query_builder = query_builder.order(#sql_table::#field.asc());
                     },
                     FilterSortOrder::Desc =>{
+                        if cfg!(debug_assertions) {
+                            info!("Sorting by {} ({}) in descending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
+                        }
                         query_builder = query_builder.order(#sql_table::#field.desc());
                     },
                 },
