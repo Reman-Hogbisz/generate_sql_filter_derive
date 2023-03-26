@@ -537,6 +537,11 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     _ => {}
                 }
 
+                if cfg!(debug_assertions) {
+                    let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query_builder);
+                    info!("Filter Query: {}", debug);
+                }
+
                 match query_builder.load::<#ident>(&connection) {
                     Ok(vals) => Ok(vals),
                     Err(e) => {
@@ -601,6 +606,11 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 } else {
                     (count as f64 / limit as f64).ceil() as i64
                 };
+
+                if cfg!(debug_assertions) {
+                    let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query_builder);
+                    info!("Filter Query: {}", debug);
+                }
                 
 
                 match query_builder.load::<#ident>(&connection) {
