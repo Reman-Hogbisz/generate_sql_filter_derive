@@ -603,7 +603,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 match (self.sort_by, self.sort_order) {
                     (Some(sort_by), Some(sort_order)) => {
                         if cfg!(debug_assertions) {
-                            info!("Query Filter found Some(sort_by) = {sort_by:?} and Some(sort_order) = {sort_order:?}");
+                            info!("Query Filter found Some(sort_by) = {:?} and Some(sort_order) = {:?}", sort_by, sort_order);
                         }
                         match sort_by {
                             #field_sort_declarations
