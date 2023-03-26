@@ -364,7 +364,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                         }
                                         query_builder = query_builder.order(#sql_table::#field.asc());
                                     },
-                                    FilterSortOrder::Desc =>{
+                                    FilterSortOrder::Desc => {
                                         if cfg!(debug_assertions) {
                                             info!("Sorting by {} ({}) in descending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
                                         }
@@ -470,7 +470,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                         }
                         query_builder = query_builder.order(#sql_table::#field.asc());
                     },
-                    FilterSortOrder::Desc =>{
+                    FilterSortOrder::Desc => {
                         if cfg!(debug_assertions) {
                             info!("Sorting by {} ({}) in descending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
                         }
@@ -543,11 +543,13 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 #query_builder_declarations
 
                 match (self.sort_by, self.sort_order) {
-                    (Some(sort_by), Some(sort_order)) => match sort_by {
+                    (Some(sort_by), Some(sort_order)) => {
                         if cfg!(debug_assertions) {
                             info!("Query Filter found Some(sort_by) = {:?} and Some(sort_order) = {:?}", sort_by, sort_order);
                         }
-                        #field_sort_declarations
+                        match sort_by {
+                            #field_sort_declarations
+                        }
                     },
                     _ => {}
                 }
