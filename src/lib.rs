@@ -238,9 +238,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             }
                             _ => false,
                         }){
-                            let field_in = Ident::new(&format!("{}_in", field), Span::call_site());
-                            let field_not_in =
-                                Ident::new(&format!("{}_not_in", field), Span::call_site());
                             let field_gt = Ident::new(&format!("{}_gt", field), Span::call_site());
                             let field_gte =
                                 Ident::new(&format!("{}_gte", field), Span::call_site());
@@ -248,8 +245,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             let field_lte =
                                 Ident::new(&format!("{}_lte", field), Span::call_site());
                             filtered_field_declarations.extend::<TokenStream2>(quote! {
-                                pub #field_in : Option<Vec<#ftype>>,
-                                pub #field_not_in : Option<Vec<#ftype>>,
                                 pub #field_gt : Option<#ftype>,
                                 pub #field_gte : Option<#ftype>,
                                 pub #field_lt : Option<#ftype>,
@@ -257,15 +252,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             });
 
                             query_builder_declarations.extend::<TokenStream2>(quote! {
-
-                                if let Some(val_in) = self.#field_in.as_ref() {
-                                    query_builder = query_builder.filter(#sql_table::#field.eq_any(val_in));
-                                }
-
-                                if let Some(val_not_in) = self.#field_not_in.as_ref() {
-                                    query_builder = query_builder.filter(#sql_table::#field.ne_all(val_not_in));
-                                }
-
                                 if let Some(gt) = self.#field_gt {
                                     query_builder = query_builder.filter(#sql_table::#field.gt(gt));
                                 }
@@ -360,13 +346,13 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 #enum_name::#sort_by_field => match sort_order {
                                     FilterSortOrder::Asc => {
                                         if cfg!(debug_assertions) {
-                                            info!("Sorting by {} ({}) in ascending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
+                                            debug!("Sorting by {} ({}) in ascending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
                                         }
                                         query_builder = query_builder.order(#sql_table::#field.asc());
                                     },
                                     FilterSortOrder::Desc => {
                                         if cfg!(debug_assertions) {
-                                            info!("Sorting by {} ({}) in descending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
+                                            debug!("Sorting by {} ({}) in descending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
                                         }
                                         query_builder = query_builder.order(#sql_table::#field.desc());
                                     },
@@ -384,10 +370,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             }
                             _ => false,
                         }) {
-                            let field_in =
-                                Ident::new(&format!("{}_in", field), Span::call_site());
-                            let field_not_in =
-                                Ident::new(&format!("{}_not_in", field), Span::call_site());
                             let field_gt = Ident::new(&format!("{}_gt", field), Span::call_site());
                             let field_gte =
                                 Ident::new(&format!("{}_gte", field), Span::call_site());
@@ -395,8 +377,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             let field_lte =
                                 Ident::new(&format!("{}_lte", field), Span::call_site());
                             filtered_field_declarations.extend::<TokenStream2>(quote! {
-                                pub #field_in : Option<Vec<#ftype>>,
-                                pub #field_not_in : Option<Vec<#ftype>>,
                                 pub #field_gt : Option<#ftype>,
                                 pub #field_gte : Option<#ftype>,
                                 pub #field_lt : Option<#ftype>,
@@ -404,13 +384,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             });
 
                             query_builder_declarations.extend::<TokenStream2>(quote! {
-                                if let Some(val_in) = self.#field_in.as_ref() {
-                                    query_builder = query_builder.filter(#sql_table::#field.eq_any(val_in));
-                                }
-
-                                if let Some(val_not_in) = self.#field_not_in.as_ref() {
-                                    query_builder = query_builder.filter(#sql_table::#field.ne_all(val_not_in));
-                                }
 
                                 if let Some(gt) = self.#field_gt {
                                     query_builder = query_builder.filter(#sql_table::#field.gt(gt));
@@ -438,10 +411,16 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     return;
                 }
             }
+            let field_in =
+                Ident::new(&format!("{}_in", field), Span::call_site());
+            let field_not_in =
+                Ident::new(&format!("{}_not_in", field), Span::call_site());
             let field_not = Ident::new(&format!("{}_not", field), Span::call_site());
             filtered_field_declarations.extend::<TokenStream2>(quote! { 
                 pub #field : Option<#ftype>, 
                 pub #field_not : Option<#ftype>,
+                pub #field_in : Option<Vec<#ftype>>,
+                pub #field_not_in : Option<Vec<#ftype>>,
             });
             query_builder_declarations.extend::<TokenStream2>(quote! {
                 if let Some(value) = &self.#field {
@@ -450,6 +429,14 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 if let Some(value) = &self.#field_not {
                     query_builder = query_builder.filter(#sql_table::#field.ne(value));
+                }
+
+                if let Some(val_in) = self.#field_in.as_ref() {
+                    query_builder = query_builder.filter(#sql_table::#field.eq_any(val_in));
+                }
+
+                if let Some(val_not_in) = self.#field_not_in.as_ref() {
+                    query_builder = query_builder.filter(#sql_table::#field.ne_all(val_not_in));
                 }
             });
 
@@ -466,13 +453,13 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 #enum_name::#sort_by_field => match sort_order {
                     FilterSortOrder::Asc => {
                         if cfg!(debug_assertions) {
-                            info!("Sorting by {} ({}) in ascending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
+                            debug!("Sorting by {} ({}) in ascending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
                         }
                         query_builder = query_builder.order(#sql_table::#field.asc());
                     },
                     FilterSortOrder::Desc => {
                         if cfg!(debug_assertions) {
-                            info!("Sorting by {} ({}) in descending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
+                            debug!("Sorting by {} ({}) in descending order", stringify!(#sort_by_field), stringify!(#sql_table::#field));
                         }
                         query_builder = query_builder.order(#sql_table::#field.desc());
                     },
@@ -545,7 +532,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 match (self.sort_by, self.sort_order) {
                     (Some(sort_by), Some(sort_order)) => {
                         if cfg!(debug_assertions) {
-                            info!("Query Filter found Some(sort_by) = {:?} and Some(sort_order) = {:?}", sort_by, sort_order);
+                            debug!("Query Filter found Some(sort_by) = {:?} and Some(sort_order) = {:?}", sort_by, sort_order);
                         }
                         match sort_by {
                             #field_sort_declarations
@@ -556,7 +543,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 if cfg!(debug_assertions) {
                     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query_builder);
-                    info!("Filter Query: {}", debug);
+                    debug!("Filter Query: {}", debug);
                 }
 
                 match query_builder.load::<#ident>(&connection) {
@@ -614,7 +601,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 match (self.sort_by, self.sort_order) {
                     (Some(sort_by), Some(sort_order)) => {
                         if cfg!(debug_assertions) {
-                            info!("Query Filter found Some(sort_by) = {:?} and Some(sort_order) = {:?}", sort_by, sort_order);
+                            debug!("Query Filter found Some(sort_by) = {:?} and Some(sort_order) = {:?}", sort_by, sort_order);
                         }
                         match sort_by {
                             #field_sort_declarations
@@ -631,7 +618,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 if cfg!(debug_assertions) {
                     let debug = diesel::debug_query::<diesel::pg::Pg, _>(&query_builder);
-                    info!("Filter Query: {}", debug);
+                    debug!("Filter Query: {}", debug);
                 }
                 
 
