@@ -245,6 +245,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                     pub #field_ends_with : Option<String>,
                                     pub #field_not_ends_with: Option<String>,
                                     pub #field_contains_insensitive : Option<String>,
+                                    pub #field_not_contains_insensitive : Option<String>,
                                     pub #field_not_starts_with_insensitive : Option<String>,
                                     pub #field_starts_with_insensitive : Option<String>,
                                     pub #field_not_ends_with_insensitive : Option<String>,
