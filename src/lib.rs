@@ -203,16 +203,52 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                             "String" => {
                                 let field_contains =
                                     Ident::new(&format!("{}_contains", field), Span::call_site());
+                                let field_not_contains =
+                                    Ident::new(&format!("{}_not_contains", field), Span::call_site());
                                 let field_starts_with = Ident::new(
                                     &format!("{}_starts_with", field),
                                     Span::call_site(),
                                 );
+                                let field_not_starts_with = Ident::new(
+                                    &format!("{}_not_starts_with", field),
+                                    Span::call_site(),
+                                );
                                 let field_ends_with =
                                     Ident::new(&format!("{}_ends_with", field), Span::call_site());
+                                let field_not_ends_with = Ident::new(
+                                    &format!("{}_not_ends_with", field),
+                                    Span::call_site(),
+                                );
+                                let field_contains_insensitive =
+                                    Ident::new(&format!("{}_contains_insensitive", field), Span::call_site());
+                                let field_not_contains_insensitive =
+                                    Ident::new(&format!("{}_not_contains_insensitive", field), Span::call_site());
+                                let field_starts_with_insensitive = Ident::new(
+                                    &format!("{}_starts_with_insensitive", field),
+                                    Span::call_site(),
+                                );
+                                let field_not_starts_with_insensitive = Ident::new(
+                                    &format!("{}_not_starts_with_insensitive", field),
+                                    Span::call_site(),
+                                );
+                                let field_ends_with_insensitive =
+                                    Ident::new(&format!("{}_ends_with_insensitive", field), Span::call_site());
+                                let field_not_ends_with_insensitive = Ident::new(
+                                    &format!("{}_not_ends_with_insensitive", field),
+                                    Span::call_site(),
+                                );
                                 filtered_field_declarations.extend::<TokenStream2>(quote! {
                                     pub #field_contains : Option<String>,
+                                    pub #field_not_contains: Option<String>,
                                     pub #field_starts_with : Option<String>,
+                                    pub #field_not_starts_with: Option<String>,
                                     pub #field_ends_with : Option<String>,
+                                    pub #field_not_ends_with: Option<String>,
+                                    pub #field_contains_insensitive : Option<String>,
+                                    pub #field_not_starts_with_insensitive : Option<String>,
+                                    pub #field_starts_with_insensitive : Option<String>,
+                                    pub #field_not_ends_with_insensitive : Option<String>,
+                                    pub #field_ends_with_insensitive : Option<String>,
                                 });
 
                                 query_builder_declarations.extend::<TokenStream2>(quote! {
@@ -220,12 +256,48 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                         query_builder = query_builder.filter(#sql_table::#field.like(format!("%{}%", contains)));
                                     }
 
+                                    if let Some(not_contains) = self.#field_not_contains.as_ref() {
+                                        query_builder = query_builder.filter(#sql_table::#field.not_like(format!("%{}%", not_contains)));
+                                    }
+
                                     if let Some(starts_with) = self.#field_starts_with.as_ref() {
                                         query_builder = query_builder.filter(#sql_table::#field.like(format!("{}%", starts_with)));
                                     }
 
+                                    if let Some(not_starts_with) = self.#field_not_starts_with.as_ref() {
+                                        query_builder = query_builder.filter(#sql_table::#field.not_like(format!("{}%", not_starts_with)));
+                                    }
+
                                     if let Some(ends_with) = self.#field_ends_with.as_ref() {
                                         query_builder = query_builder.filter(#sql_table::#field.like(format!("%{}", ends_with)));
+                                    }
+
+                                    if let Some(not_ends_with) = self.#field_not_ends_with.as_ref() {
+                                        query_builder = query_builder.filter(#sql_table::#field.not_like(format!("%{}", not_ends_with)));
+                                    }
+
+                                    if let Some(contains_insensitive) = self.#field_contains_insensitive.as_ref() {
+                                        query_builder = query_builder.filter(#sql_table::#field.ilike(format!("%{}%", contains_insensitive)));
+                                    }
+
+                                    if let Some(not_contains_insensitive) = self.#field_not_contains_insensitive.as_ref() {
+                                        query_builder = query_builder.filter(#sql_table::#field.not_ilike(format!("%{}%", not_contains_insensitive)));
+                                    }
+
+                                    if let Some(starts_with_insensitive) = self.#field_starts_with_insensitive.as_ref() {
+                                        query_builder = query_builder.filter(#sql_table::#field.ilike(format!("{}%", starts_with_insensitive)));
+                                    }
+
+                                    if let Some(not_starts_with_insensitive) = self.#field_not_starts_with_insensitive.as_ref() {
+                                        query_builder = query_builder.filter(#sql_table::#field.not_ilike(format!("{}%", not_starts_with_insensitive)));
+                                    }
+
+                                    if let Some(ends_with_insensitive) = self.#field_ends_with_insensitive.as_ref() {
+                                        query_builder = query_builder.filter(#sql_table::#field.ilike(format!("%{}", ends_with_insensitive)));
+                                    }
+
+                                    if let Some(not_ends_with_insensitive) = self.#field_not_ends_with_insensitive.as_ref() {
+                                        query_builder = query_builder.filter(#sql_table::#field.not_ilike(format!("%{}", not_ends_with_insensitive)));
                                     }
                                 });
                             }
