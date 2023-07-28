@@ -550,6 +550,11 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         Span::call_site(),
     );
 
+    let sql_count_function_name = Ident::new(
+        &format!("count_{}", ident.to_string().to_lowercase()),
+        Span::call_site(),
+    );
+
     let output = quote! {
 
         use crate::util::*;
@@ -699,6 +704,43 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     Ok(vals) => Ok((vals, pages)),
                     Err(e) => {
                         error!("Failed to get {} with error '{}'", stringify!(#ident), e);
+                        return Err(SqlError::DieselError(e));
+                    }
+                }
+            }
+        
+            pub fn #sql_count_function_name(
+                &self,
+                pool: &PgPool
+            ) -> Result<i64, SqlError> {
+
+                let connection = match pool.get() {
+                    Ok(connection) => connection,
+                    Err(e) => {
+                        error!("Failed to get pooled connection with error '{}'", e);
+                        return Err(SqlError::ConnectionError);
+                    }
+                };
+
+                let mut limit = self.limit.unwrap_or(100) as i64;
+                if limit < 0 {
+                    limit = 100;
+                }
+
+                let mut page = self.page.unwrap_or(0) as i64;
+                if page < 0 {
+                    page = 0;
+                }
+
+                let mut query_builder = #sql_table::table
+                    .into_boxed();
+
+                #query_builder_declarations
+
+                match query_builder.count().get_result::<i64>(&connection) {
+                    Ok(count) => Ok(count),
+                    Err(e) => {
+                        error!("Failed to get count of {} with error '{}'", stringify!(#ident), e);
                         return Err(SqlError::DieselError(e));
                     }
                 }
