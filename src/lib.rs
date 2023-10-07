@@ -582,7 +582,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 pool: &PgPool,
             ) -> Result<Vec<#ident>, SqlError> {
 
-                let connection = match pool.get() {
+                let mut connection = match pool.get() {
                     Ok(connection) => connection,
                     Err(e) => {
                         error!("Failed to get pooled connection with error '{}'", e);
@@ -624,7 +624,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     debug!("Filter Query: {}", debug);
                 }
 
-                match query_builder.load::<#ident>(&connection) {
+                match query_builder.load::<#ident>(&mut connection) {
                     Ok(vals) => Ok(vals),
                     Err(e) => {
                         error!("Failed to get {} with error '{}'", stringify!(#ident), e);
@@ -638,7 +638,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 pool: &PgPool,
             ) -> Result<(Vec<#ident>, i64), SqlError> {
 
-                let connection = match pool.get() {
+                let mut connection = match pool.get() {
                     Ok(connection) => connection,
                     Err(e) => {
                         error!("Failed to get pooled connection with error '{}'", e);
@@ -661,7 +661,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 #query_builder_declarations
 
-                let count = match query_builder.count().get_result::<i64>(&connection) {
+                let count = match query_builder.count().get_result::<i64>(&mut connection) {
                     Ok(count) => count,
                     Err(e) => {
                         error!("Failed to get count of {} with error '{}'", stringify!(#ident), e);
@@ -700,7 +700,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 }
                 
 
-                match query_builder.load::<#ident>(&connection) {
+                match query_builder.load::<#ident>(&mut connection) {
                     Ok(vals) => Ok((vals, pages)),
                     Err(e) => {
                         error!("Failed to get {} with error '{}'", stringify!(#ident), e);
@@ -714,7 +714,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 pool: &PgPool
             ) -> Result<i64, SqlError> {
 
-                let connection = match pool.get() {
+                let mut connection = match pool.get() {
                     Ok(connection) => connection,
                     Err(e) => {
                         error!("Failed to get pooled connection with error '{}'", e);
@@ -737,7 +737,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 #query_builder_declarations
 
-                match query_builder.count().get_result::<i64>(&connection) {
+                match query_builder.count().get_result::<i64>(&mut connection) {
                     Ok(count) => Ok(count),
                     Err(e) => {
                         error!("Failed to get count of {} with error '{}'", stringify!(#ident), e);
