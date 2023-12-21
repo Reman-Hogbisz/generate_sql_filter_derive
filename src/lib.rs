@@ -306,12 +306,12 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
         use crate::util::*;
 
-        #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
+        #[derive(Clone, Copy, Debug, Serialize, PartialEq)]
         pub enum #enum_name {
             #field_sort_by_enum_declarations
         }
 
-        #[derive(Default, Clone, Debug, Deserialize, PartialEq)]
+        #[derive(Default, Clone, Debug, Serialize, PartialEq)]
         pub struct #struct_name {
             pub limit: Option<i32>,
             pub page: Option<i32>,
