@@ -313,7 +313,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             #field_sort_by_enum_declarations
         }
 
-        #[derive(TS, Default, Clone, Debug, Deserialize, PartialEq)]
+        #[derive(Default, Clone, Debug, Deserialize, PartialEq)]
         pub struct #struct_name {
             pub limit: Option<i32>,
             pub page: Option<i32>,
