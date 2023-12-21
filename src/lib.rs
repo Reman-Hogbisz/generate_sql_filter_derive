@@ -305,8 +305,6 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
     let output = quote! {
 
         use crate::util::*;
-        use crate::db_connection::*;
-        use diesel::prelude::*;
 
         #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
         pub enum #enum_name {
