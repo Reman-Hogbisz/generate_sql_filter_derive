@@ -1,6 +1,6 @@
 [package]
 name = "generate_sql_filter_derive"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 
 [lib]
