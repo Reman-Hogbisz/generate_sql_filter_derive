@@ -108,13 +108,19 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         Span::call_site(),
     );
 
+    let and_or_enum_name = Ident::new(
+        &format!("{}AndOr", ident.to_string()),
+        Span::call_site(),
+    );
+
     let mut filtered_field_declarations = TokenStream2::default();
 
     let mut field_sort_by_enum_declarations = TokenStream2::default();
 
     let mut field_sort_declarations = TokenStream2::default();
 
-    let mut query_builder_declarations = TokenStream2::default();
+    let mut and_query_builder_declarations = TokenStream2::default();
+    let mut or_query_builder_declarations = TokenStream2::default();
 
     const TYPES_THAT_HAVE_ORDERING: &[&'static str] = &[
         "f64",
@@ -178,13 +184,23 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                         pub #field_contains_any : Option<Vec<#inner_type>>,
                                     });
 
-                                    query_builder_declarations.extend::<TokenStream2>(quote! {
+                                    and_query_builder_declarations.extend::<TokenStream2>(quote! {
                                         if let Some(contains) = self.#field_contains {
                                             query_builder = query_builder.filter(#sql_table::#field.eq_any(contains));
                                         }
 
                                         if let Some(contains_any) = self.#field_contains_any {
                                             query = query.filter(#field.overlaps_with(contains_any));
+                                        }
+                                    });
+
+                                    or_query_builder_declarations.extend::<TokenStream2>(quote! {
+                                        if let Some(contains) = self.#field_contains {
+                                            query_builder = query_builder.or_filter(#sql_table::#field.eq_any(contains));
+                                        }
+
+                                        if let Some(contains_any) = self.#field_contains_any {
+                                            query = query.or_filter(#field.overlaps_with(contains_any));
                                         }
                                     });
                                 }
@@ -252,7 +268,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                     pub #field_ends_with_insensitive : Option<String>,
                                 });
 
-                                query_builder_declarations.extend::<TokenStream2>(quote! {
+                                and_query_builder_declarations.extend::<TokenStream2>(quote! {
                                     if let Some(contains) = self.#field_contains.as_ref() {
                                         query_builder = query_builder.filter(#sql_table::#field.like(format!("%{}%", contains)));
                                     }
@@ -301,6 +317,56 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                         query_builder = query_builder.filter(#sql_table::#field.not_ilike(format!("%{}", not_ends_with_insensitive)));
                                     }
                                 });
+
+                                or_query_builder_declarations.extend::<TokenStream2>(quote! {
+                                    if let Some(contains) = self.#field_contains.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.like(format!("%{}%", contains)));
+                                    }
+
+                                    if let Some(not_contains) = self.#field_not_contains.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.not_like(format!("%{}%", not_contains)));
+                                    }
+
+                                    if let Some(starts_with) = self.#field_starts_with.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.like(format!("{}%", starts_with)));
+                                    }
+
+                                    if let Some(not_starts_with) = self.#field_not_starts_with.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.not_like(format!("{}%", not_starts_with)));
+                                    }
+
+                                    if let Some(ends_with) = self.#field_ends_with.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.like(format!("%{}", ends_with)));
+                                    }
+
+                                    if let Some(not_ends_with) = self.#field_not_ends_with.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.not_like(format!("%{}", not_ends_with)));
+                                    }
+
+                                    if let Some(contains_insensitive) = self.#field_contains_insensitive.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.ilike(format!("%{}%", contains_insensitive)));
+                                    }
+
+                                    if let Some(not_contains_insensitive) = self.#field_not_contains_insensitive.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.not_ilike(format!("%{}%", not_contains_insensitive)));
+                                    }
+
+                                    if let Some(starts_with_insensitive) = self.#field_starts_with_insensitive.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.ilike(format!("{}%", starts_with_insensitive)));
+                                    }
+
+                                    if let Some(not_starts_with_insensitive) = self.#field_not_starts_with_insensitive.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.not_ilike(format!("{}%", not_starts_with_insensitive)));
+                                    }
+
+                                    if let Some(ends_with_insensitive) = self.#field_ends_with_insensitive.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.ilike(format!("%{}", ends_with_insensitive)));
+                                    }
+
+                                    if let Some(not_ends_with_insensitive) = self.#field_not_ends_with_insensitive.as_ref() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.not_ilike(format!("%{}", not_ends_with_insensitive)));
+                                    }
+                                });
                             }
                             _ => (),
                         }
@@ -324,7 +390,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 pub #field_lte : Option<#ftype>,
                             });
 
-                            query_builder_declarations.extend::<TokenStream2>(quote! {
+                            and_query_builder_declarations.extend::<TokenStream2>(quote! {
                                 if let Some(gt) = self.#field_gt {
                                     query_builder = query_builder.filter(#sql_table::#field.gt(gt));
                                 }
@@ -339,6 +405,24 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                                 if let Some(lte) = self.#field_lte {
                                     query_builder = query_builder.filter(#sql_table::#field.le(lte));
+                                }
+                            });
+                            
+                            or_query_builder_declarations.extend::<TokenStream2>(quote! {
+                                if let Some(gt) = self.#field_gt {
+                                    query_builder = query_builder.or_filter(#sql_table::#field.gt(gt));
+                                }
+
+                                if let Some(gte) = self.#field_gte {
+                                    query_builder = query_builder.or_filter(#sql_table::#field.ge(gte));
+                                }
+
+                                if let Some(lt) = self.#field_lt {
+                                    query_builder = query_builder.or_filter(#sql_table::#field.lt(lt));
+                                }
+
+                                if let Some(lte) = self.#field_lte {
+                                    query_builder = query_builder.or_filter(#sql_table::#field.le(lte));
                                 }
                             });
                         }
@@ -372,7 +456,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 pub #field_is_none : Option<bool>,
                             });
 
-                            query_builder_declarations.extend::<TokenStream2>(quote! {
+                            and_query_builder_declarations.extend::<TokenStream2>(quote! {
                                 if let Some(is_some) = &self.#field_is_some {
                                     query_builder = query_builder.filter(#sql_table::#field.eq(is_some));
                                 }
@@ -402,6 +486,40 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                         query_builder = query_builder.filter(#sql_table::#field.is_null());
                                     } else {
                                         query_builder = query_builder.filter(#sql_table::#field.is_not_null());
+                                    }
+                                }
+                            });
+
+                            or_query_builder_declarations.extend::<TokenStream2>(quote! {
+                                if let Some(is_some) = &self.#field_is_some {
+                                    query_builder = query_builder.or_filter(#sql_table::#field.eq(is_some));
+                                }
+
+                                if let Some(is_some_in) = &self.#field_is_some_in {
+                                    query_builder = query_builder.or_filter(#sql_table::#field.eq_any(is_some_in));
+                                }
+
+                                if let Some(is_not_some) = &self.#field_is_not_some {
+                                    if self.#field_is_none.is_none() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.ne(is_not_some).or(#sql_table::#field.is_null()));
+                                    } else {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.ne(is_not_some));
+                                    }
+                                }
+
+                                if let Some(is_not_some_in) = &self.#field_is_not_some_in {
+                                    if self.#field_is_none.is_none() {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.ne_all(is_not_some_in).or(#sql_table::#field.is_null()));
+                                    } else {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.ne_all(is_not_some_in));
+                                    }
+                                }
+
+                                if let Some(is_none) = self.#field_is_none {
+                                    if is_none {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.is_null());
+                                    } else {
+                                        query_builder = query_builder.or_filter(#sql_table::#field.is_not_null());
                                     }
                                 }
                             });
@@ -457,7 +575,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                 pub #field_lte : Option<#ftype>,
                             });
 
-                            query_builder_declarations.extend::<TokenStream2>(quote! {
+                            and_query_builder_declarations.extend::<TokenStream2>(quote! {
 
                                 if let Some(gt) = self.#field_gt {
                                     query_builder = query_builder.filter(#sql_table::#field.gt(gt));
@@ -473,6 +591,25 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                                 if let Some(lte) = self.#field_lte {
                                     query_builder = query_builder.filter(#sql_table::#field.le(lte));
+                                }
+                            });
+
+                            or_query_builder_declarations.extend::<TokenStream2>(quote! {
+
+                                if let Some(gt) = self.#field_gt {
+                                    query_builder = query_builder.or_filter(#sql_table::#field.gt(gt));
+                                }
+
+                                if let Some(gte) = self.#field_gte {
+                                    query_builder = query_builder.or_filter(#sql_table::#field.ge(gte));
+                                }
+
+                                if let Some(lt) = self.#field_lt {
+                                    query_builder = query_builder.or_filter(#sql_table::#field.lt(lt));
+                                }
+
+                                if let Some(lte) = self.#field_lte {
+                                    query_builder = query_builder.or_filter(#sql_table::#field.le(lte));
                                 }
                             });
 
@@ -496,7 +633,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 pub #field_in : Option<Vec<#ftype>>,
                 pub #field_not_in : Option<Vec<#ftype>>,
             });
-            query_builder_declarations.extend::<TokenStream2>(quote! {
+            and_query_builder_declarations.extend::<TokenStream2>(quote! {
                 if let Some(value) = &self.#field {
                     query_builder = query_builder.filter(#sql_table::#field.eq(value));
                 }
@@ -511,6 +648,24 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
 
                 if let Some(val_not_in) = self.#field_not_in.as_ref() {
                     query_builder = query_builder.filter(#sql_table::#field.ne_all(val_not_in));
+                }
+            });
+
+            or_query_builder_declarations.extend::<TokenStream2>(quote! {
+                if let Some(value) = &self.#field {
+                    query_builder = query_builder.or_filter(#sql_table::#field.eq(value));
+                }
+
+                if let Some(value) = &self.#field_not {
+                    query_builder = query_builder.or_filter(#sql_table::#field.ne(value));
+                }
+
+                if let Some(val_in) = self.#field_in.as_ref() {
+                    query_builder = query_builder.or_filter(#sql_table::#field.eq_any(val_in));
+                }
+
+                if let Some(val_not_in) = self.#field_not_in.as_ref() {
+                    query_builder = query_builder.or_filter(#sql_table::#field.ne_all(val_not_in));
                 }
             });
 
@@ -562,6 +717,14 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         use crate::db_connection::*;
         use diesel::prelude::*;
 
+
+        #[derive(TS, Clone, Copy, Debug, Deserialize, PartialEq)]
+        #[ts(export)]
+        pub enum #and_or_enum_name {
+            And,
+            Or,
+        }
+
         #[derive(TS, Clone, Copy, Debug, Deserialize, PartialEq)]
         #[ts(export)]
         pub enum #enum_name {
@@ -575,6 +738,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             pub page: Option<i32>,
             pub sort_by: Option<#enum_name>,
             pub sort_order: Option<FilterSortOrder>,
+            pub and_or: Option<#and_or_enum_name>,
             #filtered_field_declarations
         } impl #struct_name {
 
@@ -606,7 +770,20 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     .limit(limit)
                     .into_boxed();
 
-                #query_builder_declarations
+                match self.and_or {
+                    Some(#and_or_enum_name::And) | None => {
+                        if cfg!(debug_assertions) {
+                            debug!("Query Filter using And for query");
+                        }
+                        #and_query_builder_declarations
+                    },
+                    Some(#and_or_enum_name::Or) => {
+                        if cfg!(debug_assertions) {
+                            debug!("Query Filter using Or for query");
+                        }
+                        #or_query_builder_declarations
+                    },
+                }
 
                 match (self.sort_by, self.sort_order) {
                     (Some(sort_by), Some(sort_order)) => {
@@ -660,7 +837,20 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 let mut query_builder = #sql_table::table
                     .into_boxed();
 
-                #query_builder_declarations
+                match self.and_or {
+                    Some(#and_or_enum_name::And) | None => {
+                        if cfg!(debug_assertions) {
+                            debug!("Query Filter using And for count query");
+                        }
+                        #and_query_builder_declarations
+                    },
+                    Some(#and_or_enum_name::Or) => {
+                        if cfg!(debug_assertions) {
+                            debug!("Query Filter using Or for count query");
+                        }
+                        #or_query_builder_declarations
+                    },
+                }
 
                 let count = match query_builder.count().get_result::<i64>(&mut connection) {
                     Ok(count) => count,
@@ -675,7 +865,20 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     .limit(limit)
                     .into_boxed();
 
-                #query_builder_declarations
+                match self.and_or {
+                    Some(#and_or_enum_name::And) | None => {
+                        if cfg!(debug_assertions) {
+                            debug!("Query Filter using And for query");
+                        }
+                        #and_query_builder_declarations
+                    },
+                    Some(#and_or_enum_name::Or) => {
+                        if cfg!(debug_assertions) {
+                            debug!("Query Filter using Or for query");
+                        }
+                        #or_query_builder_declarations
+                    },
+                }
 
                 match (self.sort_by, self.sort_order) {
                     (Some(sort_by), Some(sort_order)) => {
@@ -736,8 +939,21 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                 let mut query_builder = #sql_table::table
                     .into_boxed();
 
-                #query_builder_declarations
-
+                match self.and_or {
+                    Some(#and_or_enum_name::And) | None => {
+                        if cfg!(debug_assertions) {
+                            debug!("Query Filter using And for count query");
+                        }
+                        #and_query_builder_declarations
+                    },
+                    Some(#and_or_enum_name::Or) => {
+                        if cfg!(debug_assertions) {
+                            debug!("Query Filter using Or for count query");
+                        }
+                        #or_query_builder_declarations
+                    },
+                }
+                
                 match query_builder.count().get_result::<i64>(&mut connection) {
                     Ok(count) => Ok(count),
                     Err(e) => {
