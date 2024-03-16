@@ -25,7 +25,7 @@ fn to_camel_case<S: ToString>(s_raw: S) -> String {
     output
 }
 
-#[proc_macro_derive(CreateFilter, attributes(filter_name, sql_path))]
+#[proc_macro_derive(CreateFilter, attributes(filter_name, sql_path, ts))]
 pub fn create_filter(input: TokenStream) -> TokenStream {
     let DeriveInput {
         ident, data, attrs, ..
@@ -83,7 +83,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         panic!("derive(CreateFilter) requires a sql_path attribute");
     }
 
-    // let sql_table = sql_table.unwrap();
+    let sql_table = sql_table.unwrap();
 
     let struct_token = match data {
         syn::Data::Struct(s) => s,
@@ -95,23 +95,17 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         _ => panic!("derive(CreateFilter) only supports named fields"),
     };
 
-    let (idents, types): (Vec<_>, Vec<_>) = fields
+    let fields = fields
         .iter()
         .filter_map(|f| match f.ident {
             Some(ref i) => Some((i, &f.ty)),
             None => None,
         })
-        .unzip();
+        .collect::<Vec<_>>();
 
-    let enum_name = Ident::new(
-        &format!("{}SortBy", ident.to_string()),
-        Span::call_site(),
-    );
+    let enum_name = Ident::new(&format!("{}SortBy", ident.to_string()), Span::call_site());
 
-    let and_or_enum_name = Ident::new(
-        &format!("{}AndOr", ident.to_string()),
-        Span::call_site(),
-    );
+    let and_or_enum_name = Ident::new(&format!("{}AndOr", ident.to_string()), Span::call_site());
 
     let mut filtered_field_declarations = TokenStream2::default();
 
@@ -123,42 +117,16 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
     let mut or_query_builder_declarations = TokenStream2::default();
 
     const TYPES_THAT_HAVE_ORDERING: &[&'static str] = &[
-        "f64",
-        "i64",
-        "u64",
-        "f32",
-        "i32",
-        "u32",
-        "i16",
-        "u16",
-        "i8",
-        "u8",
-        "usize",
-        "isize",
+        "f64", "i64", "u64", "f32", "i32", "u32", "i16", "u16", "i8", "u8", "usize", "isize",
     ];
 
     const TYPES_WITH_PARTIAL_EQ: &[&'static str] = &[
-        "f64",
-        "i64",
-        "u64",
-        "f32",
-        "i32",
-        "u32",
-        "i16",
-        "u16",
-        "i8",
-        "u8",
-        "usize",
-        "isize",
-        "String",
-        "bool",
-        "char",
-        "Uuid",
+        "f64", "i64", "u64", "f32", "i32", "u32", "i16", "u16", "i8", "u8", "usize", "isize",
+        "String", "bool", "char", "Uuid",
     ];
 
-    idents
+    fields
         .into_iter()
-        .zip(types.into_iter())
         .for_each(|(field, ftype)| {
             match ftype {
                 syn::Type::Array(t) => {
@@ -368,6 +336,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                     }
                                 });
                             }
+                            "Value" => return,
                             _ => (),
                         }
 
@@ -435,6 +404,16 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                                     ident.to_string().as_str() == "Option"
                                 }
                                 _ => false,
+                            })
+                            && ftype
+                                .to_token_stream()
+                                .into_iter()
+                                .all(|token| match token {
+                                    proc_macro2::TokenTree::Ident(ident) => {
+                                        // Ignore serde_json::Value
+                                        ident.to_string().as_str() != "Value"
+                                    }
+                                    _ => true,
                             })
                         {
                             let field_is_some =
