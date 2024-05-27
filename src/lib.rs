@@ -690,36 +690,17 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
         Span::call_site(),
     );
 
-    let output = quote! {
+    let mut optional_imports = quote! {};
+    let mut optional_impls = quote! {};
 
-        use crate::util::*;
-        use crate::db_connection::*;
-        use diesel::prelude::*;
+    #[cfg(feature = "db")]
+    {
+        optional_imports.extend(quote! {
+            use crate::db_connection::*;
+            use diesel::prelude::*;
+        });
 
-
-        #[derive(TS, Clone, Copy, Debug, Deserialize, PartialEq)]
-        #[ts(export)]
-        pub enum #and_or_enum_name {
-            And,
-            Or,
-        }
-
-        #[derive(TS, Clone, Copy, Debug, Deserialize, PartialEq)]
-        #[ts(export)]
-        pub enum #enum_name {
-            #field_sort_by_enum_declarations
-        }
-
-        #[derive(TS, Default, Clone, Debug, Deserialize, PartialEq)]
-        #[ts(export)]
-        pub struct #struct_name {
-            pub limit: Option<i32>,
-            pub page: Option<i32>,
-            pub sort_by: Option<#enum_name>,
-            pub sort_order: Option<FilterSortOrder>,
-            pub and_or: Option<#and_or_enum_name>,
-            #filtered_field_declarations
-        } impl #struct_name {
+        optional_impls.extend(quote! {
 
             pub fn #sql_filter_function_name(
                 &self,
@@ -941,6 +922,39 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
                     }
                 }
             }
+        });
+    }
+
+    let output = quote! {
+
+        use crate::util::*;
+        #optional_imports
+
+
+        #[derive(TS, Clone, Copy, Debug, Deserialize, PartialEq)]
+        #[ts(export)]
+        pub enum #and_or_enum_name {
+            And,
+            Or,
+        }
+
+        #[derive(TS, Clone, Copy, Debug, Deserialize, PartialEq)]
+        #[ts(export)]
+        pub enum #enum_name {
+            #field_sort_by_enum_declarations
+        }
+
+        #[derive(TS, Default, Clone, Debug, Deserialize, PartialEq)]
+        #[ts(export)]
+        pub struct #struct_name {
+            pub limit: Option<i32>,
+            pub page: Option<i32>,
+            pub sort_by: Option<#enum_name>,
+            pub sort_order: Option<FilterSortOrder>,
+            pub and_or: Option<#and_or_enum_name>,
+            #filtered_field_declarations
+        } impl #struct_name {
+            #optional_impls
         }
     };
 
