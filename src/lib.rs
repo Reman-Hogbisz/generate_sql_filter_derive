@@ -928,6 +928,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
     let output = quote! {
 
         use crate::util::*;
+        use serde::{Serialize, Deserialize};
         #optional_imports
 
 
@@ -944,7 +945,7 @@ pub fn create_filter(input: TokenStream) -> TokenStream {
             #field_sort_by_enum_declarations
         }
 
-        #[derive(TS, Default, Clone, Debug, Deserialize, PartialEq)]
+        #[derive(TS, Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
         #[ts(export)]
         pub struct #struct_name {
             pub limit: Option<i32>,
