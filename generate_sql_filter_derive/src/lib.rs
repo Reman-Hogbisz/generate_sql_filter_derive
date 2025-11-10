@@ -4,6 +4,9 @@ use proc_macro2::{Ident, Span};
 use quote::{quote, ToTokens};
 use syn::{parse_macro_input, DeriveInput, FieldsNamed};
 
+mod string;
+mod number;
+
 fn to_camel_case<S: ToString>(s_raw: S) -> String {
     let mut s = s_raw.to_string();
     if let Some(r) = s.get_mut(0..1) {
